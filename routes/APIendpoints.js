@@ -1,6 +1,6 @@
 const { Client } = require('redis-om');
 const client = new Client()
-client.open('db://localhost:6379')
+client.open()
 
 const router = require('express').Router();
 const axios = require('axios');
@@ -68,7 +68,7 @@ router.route('/getUser:id').get(async (req, res, next) => {
 });
 
 
-router.route('/update:id').post(async (req, res, next) => {
+router.route('/update:id').put(async (req, res, next) => {
     let id = req.params.id.slice(1,);
     const user = await userRepository.fetch(id)
     let { uname, message } = req.body;
