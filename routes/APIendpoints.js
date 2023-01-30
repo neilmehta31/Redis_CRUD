@@ -1,80 +1,127 @@
-const { Client } = require('redis-om');
-const client = new Client()
-client.open()
+const redis = require('redis');
+const pg = require('../pg');
+const mongo = require('../mg');
+const keygen = require('../utility/keygen')
+const { MONGO_PASSWORD, MONGO_IP, MONGO_PORT, MONGO_USER, REDIS_URL, REDIS_PORT } = require("./config/config");
+const DEFAULT_EXPIRATION = 600;
+let redisClient = redis.createClient({
+    legacyMode: true,
+    socket: {
+        port: REDIS_PORT,
+        host: REDIS_URL
+    }
+});
 
+redisClient.connect().catch(console.error)
+
+// client.open('redis://localhost:6379')
 const router = require('express').Router();
-const axios = require('axios');
-
-const userSchema = require('../models/userSchema');
-
-const userRepository = client.fetchRepository(userSchema)
 
 
 router.route('/newUser').post(async (req, res, next) => {
 
-    // const aString = await client.execute(['PING'])
-    // console.log(aString);
-    // return res.status(200).json({aString:aString})
-    let { uname, message } = req.body;
-    // console.log(uname, message);
-    const user = await userRepository.createEntity({
-        uname: uname,
-        message: message
-    })
+    // POST into postgresql and mongodb
+    try {
+        const res_pg = await pg.postPg(req);
+        const res_mg = await mongo.postMg(req);
+        if (res_pg.status == 200 && res_mg.status == 200) {
+            const keygen_user = keygen;
 
-    const id = await userRepository.save(user)
-    console.log(id);
-    return res.status(200).json({
-        entityId: id,
-        data: user
-    })
+            // Added into redis cache 
+            redisClient.setEx(keygen_user, DEFAULT_EXPIRATION, JSON.stringify(res_pg.body));
+
+            return res.status(200).json({
+                cache_id : keygen_user,
+                name: req.body.name,
+                email: req.body.email,
+                message: "User added into Mongo and PG!! and cached"
+            });
+        } else if (res_pg.status == 200) {
+            return res.status(200).json({
+                cache_id : keygen_user,
+                name: req.body.name,
+                email: req.body.email,
+                message: "UNABLE TO ADD USER INTO MONGO"
+            });
+        } else if (res_mg.status == 200) {
+            return res.status(200).json({
+                cache_id : keygen_user,
+                name: req.body.name,
+                email: req.body.email,
+                message: "UNABLE TO ADD USER INTO POSTGRESQL"
+            });
+        } else {
+            return res.status(500).json({
+                ERROR: "UNABLE TO ADD USER; Please try again later!"
+            })
+        }
+    } catch (err) {
+        console.log(err);
+        res.status = 500;
+        res.body = { error: 'Error adding user to database :(' };
+    } finally {
+        return res;
+    }
 });
 
 
-// router.route('/getAllUsers').get(async (req, res, next) => {
+router.route('/getAllUsers').get(async (req, res, next) => {
 
-//     // client.execute('JSON.GET', ['*'], (err, response) => {
-//     //     if (err) throw err;
-//     //     console.log(response);
-//     // });
-//     client.execute('keys *', (err,keys)=>{
-//         if (err) return console.log(err);
+    redisClient.get('allusers', (err, allusrs) => {
+        if (err) console.error(err);
+        if (allusrs != null) {
+            return res.status(200).json({ message: "CACHE HIT", data: JSON.parse(allusrs) });
+        }
+    });
 
-//         for(var i = 0, len = keys.length; i < len; i++) {
-//             console.log(keys[i]);
-//         }
+    const res_pg = await pg.getAllPg(req);
+    if (res_pg.status == 200) {
+        redisClient.setEx('allusers', DEFAULT_EXPIRATION, JSON.stringify(res_pg.body))
+        return res.status(200).json({message: "CACHE MISS", cache_id: 'allusers', data : res_pg});
+    }
 
-//     })
-//     // const allUsers = await userRepository.search().all()
-//     // console.log("2");
-//     // console.log(allUsers);
-//     // res.send(allUsers)
-
-
-
-//     // const allusers = await userRepository.search().all();
-//     // console.log(allusers);
-//     // return res.status(200).json({ data: allusers });
-// });
+});
 
 
 router.route('/getUser:id').get(async (req, res, next) => {
     // console.log("get here! hello");
-    let id = req.params.id.slice(1,);
-    const userdetails = await userRepository.fetch(id);
-    // console.log(userdetails);
-    // console.log("get user details here!");
-    return res.status(200).json({ userdetails: userdetails });
+
+    let cache_id = req.params.id.slice(1,);
+    redisClient.get(`${cache_id}`, (err, usr) => {
+        if (err) console.error(err);
+        if (usr != null) {
+            return res.status(200).json({ message: "CACHE HIT", data: JSON.parse(usr) });
+        }
+    });
+
+    // const userdetails = await userRepository.fetch(id);
+    // // console.log(userdetails);
+    // // console.log("get user details here!");
+    // return res.status(200).json({ userdetails: userdetails });
+    
+    // !INFO use getIdPg and getIdMg in request body!!!! 
+    
+    const res_pg = await pg.getIdPg(req);
+    const res_mg = await mongo.getIdMg(req);
+        if (res_pg.status == 200 && res_mg.status == 200) {
+            const keygen_user = keygen;
+
+            // Added into redis cache 
+            redisClient.setEx(keygen_user, DEFAULT_EXPIRATION, JSON.stringify(res_pg.body));
+
+            return res.status(200).json({message: "CACHE MISS", cache_id: keygen_user, data : res_pg});
+        } else {
+            return res.status(500).json({
+                ERROR: "UNABLE TO GET USER; Please try again later!"
+            });
+        }
+
+
 });
 
 
 router.route('/update:id').put(async (req, res, next) => {
-    let id = req.params.id.slice(1,);
-    const user = await userRepository.fetch(id)
-    let { uname, message } = req.body;
-
-    user.uname = uname ?? null
-    user.message = message ?? null
+    let cache_id = req.params.id.slice(1,);
 
     const entid = await userRepository.save(user)
     if (entid == id) {

@@ -1,10 +1,10 @@
 FROM node:lts-alpine
 ENV NODE_ENV=production
-WORKDIR /usr/src/app
+WORKDIR /code
 COPY package*.json ./
 RUN npm install
 COPY . .
 EXPOSE 5000:5000
-RUN chown -R node /usr/src/app
+RUN chown -R node /code
 USER node
 CMD ["npm", "start"]
