@@ -14,7 +14,6 @@ let redisClient = redis.createClient({
 
 redisClient.connect().catch(console.error)
 
-// client.open('redis://localhost:6379')
 const router = require('express').Router();
 
 
@@ -93,13 +92,8 @@ router.route('/getUser:id').get(async (req, res, next) => {
             return res.status(200).json({ message: "CACHE HIT", data: JSON.parse(usr) });
         }
     });
-
-    // const userdetails = await userRepository.fetch(id);
-    // // console.log(userdetails);
-    // // console.log("get user details here!");
-    // return res.status(200).json({ userdetails: userdetails });
     
-    // !INFO use getIdPg and getIdMg in request body!!!! 
+    // !INFO use IdPg and IdMg in request body!!!! 
     
     const res_pg = await pg.getIdPg(req);
     const res_mg = await mongo.getIdMg(req);
@@ -122,25 +116,51 @@ router.route('/getUser:id').get(async (req, res, next) => {
 
 router.route('/update:id').put(async (req, res, next) => {
     let cache_id = req.params.id.slice(1,);
-
-    const entid = await userRepository.save(user)
-    if (entid == id) {
-        console.log("both the id after updation is same!!");
+    if (req.body.IdPg ==null || req.body.IdMg ==null) {
+        console.error("Error due to no mongoId or PostgreSQLId");
+        return res.status(400).json({error:"Error due to no mongoId or PostgreSQLId"})
     }
-    console.log(entid);
-    return res.status(200).json({
-        entityId: entid,
-        updated_data: user
-    })
+    const res_pg = await pg.putPg(req);
+    const res_mg = await mongo.putMg(req);
+
+    if (res_pg.status == 200 && res_mg.status == 200) {
+        const keygen_user = cache_id;
+        // Remove the previous cached values from the redis cache
+        redisClient.del(keygen_user); 
+        // Added into redis cache 
+        redisClient.setEx(keygen_user, DEFAULT_EXPIRATION, JSON.stringify(res_pg.body));
+
+        return res.status(200).json({
+            cache_id : keygen_user,
+            name: req.body.name,
+            email: req.body.email,
+            message: "User updated into Mongo and PG!! and cached"
+        });
+    } else {
+        return res.status(500).json({
+            ERROR: "UNABLE TO UPDATE USER; Please try again later!"
+        })
+    }
 });
 
 
 router.route('/deleteUser:id').delete(async (req, res, next) => {
-    let id = req.params.id.slice(1,);
+    let cache_id = req.params.id.slice(1,);
 
-    const entid = await userRepository.remove(id)
-    // res.send({ entityId: req.params.id })
-    return res.status(200).json({ entityId: entid, status: "DELETED" })
+    redisClient.del(cache_id);
+    const res_pg = await pg.deletePg(req);
+    const res_mg = await mongo.deleteMg(req);
+
+    if (res_pg.status == 200 && res_mg.status == 200) {
+
+        return res.status(200).json({
+            message: "User Deleted from Mongo and PG!! and redis"
+        });
+    } else {
+        return res.status(500).json({
+            ERROR: "UNABLE TO DELETE USER; Please try again later!"
+        })
+    }
 });
 
 
