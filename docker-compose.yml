@@ -13,6 +13,7 @@ services:
       - .:/code
     links:
       - redis
+      
   redis:
     image: redis/redis-stack-server
     ports:
