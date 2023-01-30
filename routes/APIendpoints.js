@@ -2,7 +2,7 @@ const redis = require('redis');
 const pg = require('../pg');
 const mongo = require('../mg');
 const keygen = require('../utility/keygen')
-const { MONGO_PASSWORD, MONGO_IP, MONGO_PORT, MONGO_USER, REDIS_URL, REDIS_PORT } = require("./config/config");
+const { MONGO_PASSWORD, MONGO_IP, MONGO_PORT, MONGO_USER, REDIS_URL, REDIS_PORT } = require('../configs');
 const DEFAULT_EXPIRATION = 600;
 let redisClient = redis.createClient({
     legacyMode: true,
