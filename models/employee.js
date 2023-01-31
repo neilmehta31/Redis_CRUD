@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 
 
 // Employee Schema
-const Employee = mongoose.model('Employee', {
+const Employee = mongoose.model('employee', {
     name: {
         type: String,
         required:true

@@ -6,7 +6,8 @@ const deleteUser=async(req)=>{
     Employee.findOneAndRemove({ employeeId: parseInt(req.params.id) }, function(err, data) {
         if(!err) {
             // res.send(data);
-            res.status(200).json({code: 200, message: 'Employee deleted', deleteEmployee: data})
+            res.status = 200;
+            res.body = {message: 'Employee deleted', deleteEmployee: data}
         } else {
             res.status = 500;
             res.body = { error: 'Error' };

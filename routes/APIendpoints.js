@@ -1,5 +1,4 @@
 const redis = require('redis');
-const mongo = require('../mg');
 const keygen = require('../utility/keygen')
 
 // PostGreSQL functions
@@ -21,10 +20,9 @@ const MGdeleteUser = require('../mongofunc/deleteUser');
 const { MONGO_PASSWORD, MONGO_IP, MONGO_PORT, MONGO_USER, REDIS_URL, REDIS_PORT } = require('../configs');
 const DEFAULT_EXPIRATION = 600;
 let redisClient = redis.createClient({
-    legacyMode: true,
     socket: {
         port: REDIS_PORT,
-        host: REDIS_URL
+        host: 'redis'
     }
 });
 
@@ -39,6 +37,7 @@ router.route('/newUser').post(async (req, res, next) => {
     try {
         const res_pg = await PGaddUser(req);
         const res_mg = await MGaddUser(req);
+        console.log(res_mg,"\n",res_pg);
         if (res_pg.status == 200 && res_mg.status == 200) {
             const keygen_user = keygen;
 
@@ -52,6 +51,8 @@ router.route('/newUser').post(async (req, res, next) => {
                 message: "User added into Mongo and PG!! and cached"
             });
         } else if (res_pg.status == 200) {
+            const keygen_user = keygen;
+
             return res.status(200).json({
                 cache_id : keygen_user,
                 name: req.body.name,
@@ -59,6 +60,8 @@ router.route('/newUser').post(async (req, res, next) => {
                 message: "UNABLE TO ADD USER INTO MONGO"
             });
         } else if (res_mg.status == 200) {
+            const keygen_user = keygen;
+            
             return res.status(200).json({
                 cache_id : keygen_user,
                 name: req.body.name,
@@ -90,9 +93,13 @@ router.route('/getAllUsers').get(async (req, res, next) => {
     });
 
     const res_pg = await PGgetAllUsers(req);
+    console.log(res_pg,"\n");
+
     if (res_pg.status == 200) {
         redisClient.setEx('allusers', DEFAULT_EXPIRATION, JSON.stringify(res_pg.body))
         return res.status(200).json({message: "CACHE MISS", cache_id: 'allusers', data : res_pg});
+    } else {
+        return res.status(404).json({message: "ERROR", cache_id: 'allusers'});
     }
 
 });
@@ -112,6 +119,8 @@ router.route('/getUser:id').get(async (req, res, next) => {
     // !INFO use IdPg and IdMg in request body!!!! 
     const res_pg = await PGgetUser(req);
     const res_mg = await MGgetOneUser(req);
+    console.log(res_mg,"\n",res_pg);
+
         if (res_pg.status == 200 && res_mg.status == 200) {
             const keygen_user = keygen;
 
@@ -137,6 +146,7 @@ router.route('/update:id').put(async (req, res, next) => {
     }
     const res_pg = await PGupdateUser(req);
     const res_mg = await MGUpdateUser(req);
+    console.log(res_mg,"\n",res_pg);
 
     if (res_pg.status == 200 && res_mg.status == 200) {
         const keygen_user = cache_id;
@@ -165,6 +175,7 @@ router.route('/deleteUser:id').delete(async (req, res, next) => {
     redisClient.del(cache_id);
     const res_pg = await PGdeleteUser(req);
     const res_mg = await MGdeleteUser(req);
+    console.log(res_mg,"\n",res_pg);
 
     if (res_pg.status == 200 && res_mg.status == 200) {
 
