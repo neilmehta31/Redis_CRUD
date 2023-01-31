@@ -12,6 +12,11 @@ const PGdeleteUser = require('../postgres/queries/deleteUser');
 
 // MongoDB function
 
+const getOneUser = require('../mongofunc/getOneUser');
+const getAllUsers = require('../postgres/mongofunc/getAllUsers');
+const addUser = require('../postgres/queries/addUser');
+const UpdateUser = require('../postgres/queries/updateUser');
+const deleteUser = require('../postgres/queries/deleteUser');
 
 
 const { MONGO_PASSWORD, MONGO_IP, MONGO_PORT, MONGO_USER, REDIS_URL, REDIS_PORT } = require('../configs');
