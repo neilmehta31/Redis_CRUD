@@ -4,11 +4,14 @@ services:
   server:
     build: .
     image: rediscrud
+    environment:
+      POSTGRES_DB: pgdb
     network_mode: bridge
     ports:
       - '5000:5000'
     depends_on:
       - redis
+      - pgdb
     volumes:
       - .:/code
     links:
@@ -21,5 +24,17 @@ services:
     expose:
       - 6379
     network_mode: bridge
+
+  pgdb:
+    image: postgres:latest
+    environment:
+      POSTGRES_PASSWORD: admin@123 
+      POSTGRES_USER: postgres
+      POSTGRES_DB: users
+    volumes:
+      - ./postgres/data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - '3000:5432'
     
 
