@@ -11,12 +11,11 @@ const PGdeleteUser = require('../postgres/queries/deleteUser');
 
 
 // MongoDB function
-
-const getOneUser = require('../mongofunc/getOneUser');
-const getAllUsers = require('../postgres/mongofunc/getAllUsers');
-const addUser = require('../postgres/queries/addUser');
-const UpdateUser = require('../postgres/queries/updateUser');
-const deleteUser = require('../postgres/queries/deleteUser');
+const MGgetOneUser = require('../mongofunc/getOneUser');
+const MGgetAllUsers = require('../mongofunc/getAllUsers'); // Using the postgresql function for it due to mongo being on the cloud
+const MGaddUser = require('../mongofunc/addUser');
+const MGUpdateUser = require('../mongofunc/UpdateUser');
+const MGdeleteUser = require('../mongofunc/deleteUser');
 
 
 const { MONGO_PASSWORD, MONGO_IP, MONGO_PORT, MONGO_USER, REDIS_URL, REDIS_PORT } = require('../configs');
@@ -39,7 +38,7 @@ router.route('/newUser').post(async (req, res, next) => {
     // POST into postgresql and mongodb
     try {
         const res_pg = await PGaddUser(req);
-        const res_mg = await mongo.postMg(req);
+        const res_mg = await MGaddUser(req);
         if (res_pg.status == 200 && res_mg.status == 200) {
             const keygen_user = keygen;
 
@@ -111,9 +110,8 @@ router.route('/getUser:id').get(async (req, res, next) => {
     });
     
     // !INFO use IdPg and IdMg in request body!!!! 
-    
     const res_pg = await PGgetUser(req);
-    const res_mg = await mongo.getIdMg(req);
+    const res_mg = await MGgetOneUser(req);
         if (res_pg.status == 200 && res_mg.status == 200) {
             const keygen_user = keygen;
 
@@ -138,7 +136,7 @@ router.route('/update:id').put(async (req, res, next) => {
         return res.status(400).json({error:"Error due to no mongoId or PostgreSQLId"})
     }
     const res_pg = await PGupdateUser(req);
-    const res_mg = await mongo.putMg(req);
+    const res_mg = await MGUpdateUser(req);
 
     if (res_pg.status == 200 && res_mg.status == 200) {
         const keygen_user = cache_id;
@@ -166,7 +164,7 @@ router.route('/deleteUser:id').delete(async (req, res, next) => {
 
     redisClient.del(cache_id);
     const res_pg = await PGdeleteUser(req);
-    const res_mg = await mongo.deleteMg(req);
+    const res_mg = await MGdeleteUser(req);
 
     if (res_pg.status == 200 && res_mg.status == 200) {
 
