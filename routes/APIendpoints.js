@@ -39,7 +39,7 @@ router.route('/newUser').post(async (req, res, next) => {
         const res_mg = await MGaddUser(req);
         console.log(res_mg,"\n",res_pg);
         if (res_pg.status == 200 && res_mg.status == 200) {
-            const keygen_user = keygen;
+            const keygen_user = keygen();
 
             // Added into redis cache 
             redisClient.setEx(keygen_user, DEFAULT_EXPIRATION, JSON.stringify(res_pg.body));
@@ -51,7 +51,7 @@ router.route('/newUser').post(async (req, res, next) => {
                 message: "User added into Mongo and PG!! and cached"
             });
         } else if (res_pg.status == 200) {
-            const keygen_user = keygen;
+            const keygen_user = keygen();
 
             return res.status(200).json({
                 cache_id : keygen_user,
@@ -60,7 +60,7 @@ router.route('/newUser').post(async (req, res, next) => {
                 message: "UNABLE TO ADD USER INTO MONGO"
             });
         } else if (res_mg.status == 200) {
-            const keygen_user = keygen;
+            const keygen_user = keygen();
             
             return res.status(200).json({
                 cache_id : keygen_user,
@@ -122,7 +122,7 @@ router.route('/getUser:id').get(async (req, res, next) => {
     console.log(res_mg,"\n",res_pg);
 
         if (res_pg.status == 200 && res_mg.status == 200) {
-            const keygen_user = keygen;
+            const keygen_user = keygen();
 
             // Added into redis cache 
             redisClient.setEx(keygen_user, DEFAULT_EXPIRATION, JSON.stringify(res_pg.body));
