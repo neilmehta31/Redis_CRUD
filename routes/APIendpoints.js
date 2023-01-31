@@ -26,7 +26,7 @@ let redisClient = redis.createClient({
     }
 });
 
-redisClient.connect().catch(console.error)
+redisClient.connect().then(console.log("redis connected")).catch(console.error);
 
 const router = require('express').Router();
 
