@@ -10,20 +10,23 @@ const UpdateUser=async(req)=>{
        
        // salary: req.body.salary
     };
-    Employee.findOneAndUpdate({ employeeId: parseInt(req.params.id) }, { $set: emp }, { new: true }, (err, data) => {
-        //Employee.findOne({ employeeId: parseInt(req.params.id) }, function(err, data) {  
-    if(!err) {
-            res.status = 200;
-            res.body = { message: 'Employee Updated Successfully', updateEmployee: data}
-        } else {
-            res.status = 500;
-        res.body = { error: 'Error' };
+    try{
+    const data=await Employee.findOneAndUpdate({ employeeId: parseInt(req.params.id) }, { $set: emp }, { new: true });
+    res.status=200;    
+    res.body=data;
+    
+    }    //Employee.findOne({ employeeId: parseInt(req.params.id) }, function(err, data) {  
+    catch(err) {
+                res.status = 500;
+                res.body = { error: 'Error' };
+                console.log(err);
+        
+         //   res.status(200).json({code: 200, message: 'Employee Updated Successfully', updateEmployee: data})
         }
-    });
-
-return res;
-
-
+        finally{
+            return res;
+        }
+    
 };
 
 module.exports=UpdateUser;
