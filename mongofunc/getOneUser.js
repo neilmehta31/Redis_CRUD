@@ -6,7 +6,7 @@ const getOneUser=async(req)=>{
     
     try{
     
-    const data=await Employee.findOne({ employeeId: parseInt(req.params.id) });
+    const data=await Employee.findOne({ employeeId: parseInt(req.body.id) });
     res.status=200;    
     res.body=data;    
     

@@ -4,8 +4,7 @@ const updateUser = async (req) => {
     let res = {status : null, body : null};
     try {
         const client = await pool.connect();
-        const { name, email } = req.body;
-        const { id } = req.params;
+        const { name, email, id } = req.body;
         const result = await client.query(
             'UPDATE users SET name = $1, email = $2 WHERE id = $3 RETURNING *',
             [name, email, id]

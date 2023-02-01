@@ -4,7 +4,7 @@ const deleteUser = async (req) => {
     let res = {status : null, body : null};
     try {
         const client = await pool.connect();
-        const { id } = req.params;
+        const id  = req.body.id;
         const result = await client.query('DELETE FROM users WHERE id = $1', [id]);
         if (result.rowCount === 0) {
             res.status = 404;

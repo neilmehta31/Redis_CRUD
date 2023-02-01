@@ -4,7 +4,7 @@ const getUser = async (req) => {
     let res = {status : null, body : null};
     try {
         const client = await pool.connect();
-        const result = await client.query('SELECT * FROM users WHERE id = $1', [req.params.id]);
+        const result = await client.query('SELECT * FROM users WHERE id = $1', [req.body.id]);
         if (result.rowCount === 0) {
             res.status = 404;
             res.body = { error: 'User not found' };

@@ -85,19 +85,22 @@ router.route('/newUser').post(async (req, res, next) => {
 
 router.route('/getAllUsers').get(async (req, res, next) => {
 
-    redisClient.get('allusers', (err, allusrs) => {
-        if (err) console.error(err);
-        if (allusrs != null) {
-            return res.status(200).json({ message: "CACHE HIT", data: JSON.parse(allusrs) });
-        }
-    });
+    // This would keep changing and hence storing it in redis would be a waste of resources
+
+    // redisClient.get('allusers', (err, allusrs) => {
+    //     if (err) console.error("error : ",err);
+    //     console.log("allusrs : ",allusrs);
+    //     if (allusrs != null) {
+    //         return res.status(200).json({ message: "CACHE HIT", data: JSON.parse(allusrs) });
+    //     }
+    // });
 
     const res_pg = await PGgetAllUsers(req);
     console.log(res_pg,"\n");
 
     if (res_pg.status == 200) {
-        redisClient.setEx('allusers', DEFAULT_EXPIRATION, JSON.stringify(res_pg.body))
-        return res.status(200).json({message: "CACHE MISS", cache_id: 'allusers', data : res_pg});
+        // redisClient.setEx('allusers', DEFAULT_EXPIRATION, JSON.stringify(res_pg.body))
+        return res.status(200).json({data : res_pg});
     } else {
         return res.status(404).json({message: "ERROR", cache_id: 'allusers'});
     }
@@ -108,13 +111,18 @@ router.route('/getAllUsers').get(async (req, res, next) => {
 router.route('/getUser:id').get(async (req, res, next) => {
     // console.log("get here! hello");
 
-    let cache_id = req.params.id.slice(1,);
-    redisClient.get(`${cache_id}`, (err, usr) => {
-        if (err) console.error(err);
+    const cache_id = req.params.id.slice(1,);
+    // console.log(cache_id);
+   try{     
+        const usr = await redisClient.get(cache_id);
+        console.log("usr from redis: ",usr);
         if (usr != null) {
-            return res.status(200).json({ message: "CACHE HIT", data: JSON.parse(usr) });
+            return res.status(200).json({ message: "CACHE HIT", cache_id:cache_id, data: JSON.parse(usr) });
         }
-    });
+
+    } catch (e){
+        console.error(e);
+    }
     
     // !INFO use IdPg and IdMg in request body!!!! 
     const res_pg = await PGgetUser(req);
@@ -122,7 +130,7 @@ router.route('/getUser:id').get(async (req, res, next) => {
     console.log(res_mg,"\n",res_pg);
 
         if (res_pg.status == 200 && res_mg.status == 200) {
-            const keygen_user = keygen();
+            const keygen_user = cache_id;
 
             // Added into redis cache 
             redisClient.setEx(keygen_user, DEFAULT_EXPIRATION, JSON.stringify(res_pg.body));
@@ -140,7 +148,7 @@ router.route('/getUser:id').get(async (req, res, next) => {
 
 router.route('/update:id').put(async (req, res, next) => {
     let cache_id = req.params.id.slice(1,);
-    if (req.body.IdPg ==null || req.body.IdMg ==null) {
+    if (req.body.id ==null) {
         console.error("Error due to no mongoId or PostgreSQLId");
         return res.status(400).json({error:"Error due to no mongoId or PostgreSQLId"})
     }
@@ -173,6 +181,7 @@ router.route('/deleteUser:id').delete(async (req, res, next) => {
     let cache_id = req.params.id.slice(1,);
 
     redisClient.del(cache_id);
+    console.log("user deleted from cache");
     const res_pg = await PGdeleteUser(req);
     const res_mg = await MGdeleteUser(req);
     console.log(res_mg,"\n",res_pg);

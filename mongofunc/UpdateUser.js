@@ -11,7 +11,7 @@ const UpdateUser=async(req)=>{
        // salary: req.body.salary
     };
     try{
-    const data=await Employee.findOneAndUpdate({ employeeId: parseInt(req.params.id) }, { $set: emp }, { new: true });
+    const data=await Employee.findOneAndUpdate({ employeeId: parseInt(req.body.id) }, { $set: emp }, { new: true });
     res.status=200;    
     res.body=data;
     
