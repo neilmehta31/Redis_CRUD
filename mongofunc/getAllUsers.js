@@ -3,7 +3,7 @@ const { Employee }= require('../models/employee');
 
 const getAllUsers=async(req)=>{
 let res = {status : null, body : null};
-Employee.find({}, (err, data) => {
+/*Employee.find({}, (err, data) => {
     if(!err) {
        // res.send(data);
         res.status = 200;
@@ -15,6 +15,23 @@ Employee.find({}, (err, data) => {
     }
 });
 return res;
+*/
+    
+    try {
+    const data=await Employee.find({});
+    //Employee.find({}, (err, data) =>{ 
+    res.status = 200;
+    res.body = data;
+}
+
+    catch (err) {
+    console.error(err);
+    res.status = 500;
+    res.body = { error: 'Error fetching users' };
+} finally {
+    return res;
+}
+
 
 };
 
