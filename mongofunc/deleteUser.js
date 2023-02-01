@@ -3,22 +3,25 @@ const { Employee }= require('../models/employee');
 
 const deleteUser=async(req)=>{
     let res = {status : null, body : null};
-    Employee.findOneAndRemove({ employeeId: parseInt(req.params.id) }, function(err, data) {
-        if(!err) {
-            // res.send(data);
-            res.status = 200;
-            res.body = {message: 'Employee deleted', deleteEmployee: data}
-        } else {
+
+    try{
+    const data=await Employee.findOneAndRemove({ employeeId: parseInt(req.params.id) });
+    res.status=200;
+    res.body=data;    
+
+    }  
+           
+    catch {
             res.status = 500;
             res.body = { error: 'Error' };
             console.log(err);
         }
-    });
+    
 
 
-
+finally{
 return res;
-
+}
 
 
 };
