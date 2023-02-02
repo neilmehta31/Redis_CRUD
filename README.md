@@ -5,18 +5,31 @@ Used redis-stack-server:latest image from docker hub to include the redisJSON an
 Unable to expose the redis db port to my server while in the docker container. However the port is exposed if I run the server on my localhost (outside docker)
 
 # Description
-This is a Node.js application with Express Router. The router handles various routes for creating, reading, updating, and deleting a user. The router uses the Redis-OM library to interact with a Redis database. It also uses the Axios library to handle HTTP requests and the express module to handle routing.
-It uses a userSchema model inside `/models/userSchema.js` to create and interact with the user data.
-It creates an instance of the Redis client, opens it, and uses it to fetch the userRepository.
+This is a Node.js server code that implements a REST API to interact with a PostgreSQL and MongoDB database. The code uses an express router to define several endpoints for handling user operations, such as adding a new user, retrieving all users, and retrieving a user by ID.
 
-It has four routes:
-`/newUser` is a post route that creates a new user and saves it to the Redis database.
-`/getUser:id` is a get route that retrieves a user by its id from the Redis database.
-`/update:id` is a put route that updates a user by its id in the Redis database.
-`/deleteUser:id` is a delete route that deletes a user by its id from the Redis database.
-It exports the router so it can be used in other parts of the application.
+The code uses Redis as a caching layer to store the data. Whenever a new user is added, the data is stored in Redis with a specified expiration time. When retrieving all users, Redis is not used due to the changing nature of the data.
 
-The application is further dockerised with the redis server form the dockerhub. The application image is created from the given Dockerfile. The redis server exposes the port `6397` and my application exposes port `5000` to the host. Requests and response can be generated from the above mentioned ports from the host docker user.
+The code also uses several other modules to perform specific tasks, such as keygen for generating keys and redis for connecting to the Redis database. All the required environment variables are stored in a configs file.
 
+In case of any errors or exceptions, the code returns an appropriate HTTP status code and an error message to the client.
+
+The code contains the following API endpoints:
+
+`/newUser` - This endpoint is used to add a new user to the system. It posts the data to both MongoDB and PostgreSQL, and the response is stored in Redis cache.
+
+`/getAllUsers` - This endpoint is used to retrieve all users from the system. It fetches the data from PostgreSQL and returns the response.
+
+`/getUser:id` - This endpoint is used to retrieve a specific user based on the provided ID. It checks for the data in the Redis cache, and if not found, it fetches the data from PostgreSQL and stores it in the cache.
+
+`/updateUser` - This endpoint is used to update a user in the system. It updates the user information in both MongoDB and PostgreSQL.
+
+`/deleteUser` - This endpoint is used to delete a user from the system. It deletes the user information from both MongoDB and PostgreSQL.
+
+
+
+
+
+The application is further dockerised with the `redis/redis-stack-server` and `postgresql server` from the dockerhub, and our own docker file which builds the express server and communicates with the other two through the docker internal network. The application image is created from the given Dockerfile. Requests and response can be generated from the ports mentioned in the `docker-compose` from the host docker user.
+The application listens on port `5000`.
 
 
